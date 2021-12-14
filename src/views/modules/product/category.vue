@@ -10,6 +10,9 @@
       :default-expanded-keys="expandedKeys"
       @node-expand="expandHandle"
       @node-collapse="collapseHandle"
+      @node-drop="handleDrop"
+      draggable
+      :allow-drop="allowDrop"
     >
       <!--菜单操作按钮组-->
       <span class="custom-tree-node" slot-scope="{ node, data }">
@@ -70,7 +73,7 @@
 
         <div slot="footer" class="dialog-footer">
           <el-button type="primary" @click="submit()">
-            {{dialogConfig.buttonText}}
+            {{ dialogConfig.buttonText }}
           </el-button>
         </div>
       </el-dialog>
@@ -108,6 +111,10 @@ const DIALOG_CONFIG = {
     buttonText: "修改",
   },
 };
+
+//节点深度缓存 避免每次拖拽重复计算深度
+let deepCacheMap = new Map();
+
 export default {
   //import引入的组件需要注入到对象中才能使用
   components: {},
@@ -132,19 +139,145 @@ export default {
   watch: {},
   //方法集合
   methods: {
+    /**
+     * 拖拽成后事件
+     * @param dragNode 拖拽的节点
+     * @param dropNode 目标节点 before、after、inner
+     * @param dropType 拖拽类型
+     * @param ev 事件
+     */
+    handleDrop(dragNode, dropNode, dropType, ev) {
+      //成功后，需要刷新缓存
+      this.dropSuccessRefreshCache(dragNode, dropNode, dropType);
+      //当前数据
 
+      //受影响的数据
+
+      //发出改变菜单请求
+    },
+
+    /**
+     * 拖拽成功后，刷新深度缓存
+     * @param dragNode 拖拽的节点
+     * @param dropNode 目标节点 before、after、inner
+     * @param dropType 拖拽类型
+     * @returns 是否刷新缓存，true刷新，false没有刷新
+     */
+    dropSuccessRefreshCache(dragNode, dropNode, dropType) {
+      //直接清除缓存
+      //因为获取不到dragNode.parent，暂时使用直接清除缓存方式
+      deepCacheMap = new Map();
+      return true;
+
+      /**let dragDeep = this.getCountDeep(dragNode); //拖拽节点深度
+      //清空拖拽节点父节点的缓存,因为当拖拽节点时，父节点可能深度可能会变化
+      //dragNode.parent == null 
+      //deepCacheMap.delete(dragNode.parent.data.name);
+    
+      switch (dropType) {
+        case "before":
+        case "after":
+          //需要刷新目标节点父节点的层级缓存
+          let parent = dropNode.parent;
+          let parentDeep = this.getCountDeep(parent);
+          if (parentDeep - 1 > dragDeep) {
+            debugger;
+            this.deepCacheMap.set(parent.data.name, dragDeep + 1);
+            return true;
+          }
+          break;
+        case "inner":
+          //需要刷新目标节点的层级缓存
+          let dropDeep = this.getCountDeep(dropDeep);
+          if (dropDeep - 1 > dragDeep) {
+            debugger;
+            this.deepCacheMap.set(drop.data.name, dragDeep + 1);
+            return true;
+          }
+          break;
+        default:
+      }
+      console.log("cache",deepCacheMap);
+      return false;**/
+    },
+    /**
+     * 拖拽时判断目标节点能否被放置
+     * type 参数有三种情况：'prev'、'inner' 和 'next'，
+     */
+    allowDrop(draggingNode, dropNode, type) {
+      //判断被拖动节点，以及所在父节点总层数不能大于3
+      let dragNodeDeep = this.getCountDeep(draggingNode);
+      let dropNodeLevel = dropNode.level;
+      let dropParentNodeLevel = dropNode.parent.level;
+      switch (type) {
+        case "prev":
+        case "next":
+          //插入在目标节点的前，后，比较目标节点父节点的层级
+          //父节点+拖拽节点层级大于3时，代表超过三级分类，不允许拖拽
+          if (dropParentNodeLevel + dragNodeDeep > 3) {
+            return false;
+          }
+          break;
+        case "inner":
+          //插入在目标节点里面时，比较目标节点层级
+          //目标节点+拖拽节点总层级大于3，代表超过三级分类，不允许拖拽
+          if (dropNodeLevel + dragNodeDeep > 3) {
+            return false;
+          }
+          break;
+        default:
+          return false;
+      }
+
+      return true;
+    },
+
+    /**
+     * 获取节点的总层数
+     */
+    getCountDeep(node) {
+      if (node == null || node.data == null) {
+        return;
+      }
+      //从缓存中取出 当前节点的总层数
+      let countLevel = deepCacheMap.get(node.data.name);
+      //如果从缓存中取不到，则重新计算
+      if (!countLevel) {
+        countLevel = this.countDeep(node);
+        deepCacheMap.set(node.data.name, countLevel);
+      }
+      return countLevel;
+    },
+    /**
+     * 计算节点深度
+     */
+    countDeep(node) {
+      if (node.childNodes == null || node.childNodes.length == 0) {
+        return 1;
+      }
+      let maxLevel = 1;
+      for (let i = 0; i < node.childNodes.length; i++) {
+        //遍历所有子分类，递归计算深度
+        let children = node.childNodes[i];
+        let count = 1 + this.countDeep(children);
+        if (count > maxLevel) {
+          maxLevel = count;
+        }
+      }
+      return maxLevel;
+    },
     /**
      * 节点收缩
      */
-    collapseHandle(data,node,component){
-      let index = this.expandedKeys.findIndex((item)=>item===data.catId);
-      this.expandedKeys.splice(index,1);
+    collapseHandle(data, node, component) {
+      let index = this.expandedKeys.findIndex((item) => item === data.catId);
+      this.expandedKeys.splice(index, 1);
     },
 
     /**
      * 节点展开
      */
-    expandHandle(data,node,component){
+    expandHandle(data, node, component) {
       this.expandedKeys.push(data.catId);
     },
     //获取菜单
@@ -188,7 +321,7 @@ export default {
 
         //关闭弹窗
         this.dialogFormVisible = false;
-        
+
         //刷新菜单
         this.getMenus();
         this.expandedKeys.push(this.category.catId);
