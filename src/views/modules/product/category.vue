@@ -1,6 +1,16 @@
 <!--  -->
 <template>
   <div>
+    <!--操作按钮-->
+    <el-switch
+      v-model="draggable"
+      active-color="#13ce66"
+      inactive-color="#ff4949"
+      active-text="开启拖拽"
+      inactive-text="关闭拖拽"
+    >
+    </el-switch>
+    <el-button v-if="draggable" @click="batchSaveDrag">保存拖拽</el-button>
     <!--树形分类列表-->
     <el-tree
       :data="menus"
@@ -11,7 +21,7 @@
       @node-expand="expandHandle"
       @node-collapse="collapseHandle"
       @node-drop="handleDrop"
-      draggable
+      :draggable="draggable"
       :allow-drop="allowDrop"
     >
       <!--菜单操作按钮组-->
@@ -83,6 +93,7 @@
 
 <script>
 import Vue from "vue";
+import Tools from '../../../utils/tool'
 //这里可以导入其他文件（比如：组件，工具js，第三方插件js，json文件，图片文件等等）
 //例如：import 《组件名称》 from '《组件路径》';
 
@@ -121,6 +132,7 @@ export default {
   data() {
     //这里存放数据
     return {
+      draggable: false, //是否可以拖拽分类
       dialogConfig: {},
       currentCategory: {},
       expandedKeys: [],
@@ -131,6 +143,7 @@ export default {
         children: "subCategorys",
         label: "name",
       },
+      updateCategoryList: [],
     };
   },
   //监听属性 类似于data概念
@@ -139,6 +152,51 @@ export default {
   watch: {},
   //方法集合
   methods: {
+    batchSaveDrag(){
+      if(Tools.isEmpty(this.updateCategoryList)){
+        this.$message({
+          showClose:true,
+          message:"无需要保存的数据",
+          type:'success'
+        });
+        return;
+      }
+      this.$http({
+          url: this.$http.adornUrl('/product/category/batch/update'),
+          method:'post',
+          data:this.$http.adornData(this.updateCategoryList,false)
+      }).then(({data}) => {
+          this.$message({
+              showClose:true,
+              message:data.msg,
+              type:"success"
+          })
+          this.updateCategoryList = [];
+          this.getMenus();
+          this.draggable =false;
+      });
+    },
+
+    /**
+     * 添加一个更新分类
+     */
+    updateCategoryListPush(category) {
+      if (Tools.isEmpty(category) || Tools.isEmpty(category.catId)) {
+        return fasle;
+      }
+
+      const updateList = this.updateCategoryList;
+      for (let index = 0; index < updateList.length; index++) {
+        const element = updateList[index];
+        if (element.catId == category.catId) {
+          this.updateCategoryList.splice(index, 1); //删除已有数据
+          break;
+        }
+      }
+
+      //更新数据
+      this.updateCategoryList.push(category);
+    },
     /**
      * 拖拽成后事件
      * @param dragNode 拖拽的节点
@@ -147,13 +205,109 @@ export default {
      * @param ev 事件
      */
     handleDrop(dragNode, dropNode, dropType, ev) {
+      console.log("handleDrop:", dragNode, dropNode, dropType);
       //成功后，需要刷新缓存
       this.dropSuccessRefreshCache(dragNode, dropNode, dropType);
       //当前数据
+      if (dropType == "before" || dropType == "after") {
+        this.handleDropBeforeAndAfter(dragNode, dropNode, dropType, ev);
+      } else if (dropType == "inner") {
+        this.handleDropInner(dragNode, dropNode, dropType, ev);
+      }
+      console.log("updateList",this.updateCategoryList)
+    },
 
-      //受影响的数据
+    /**
+     * 拖拽成功后事件-拖拽目标位置 inner
+     */
+    handleDropInner(dragNode, dropNode, dropType, ev) {
+      let parentCid = dropNode.data.catId;
+      parentCid = parentCid ? parentCid : 0;
+      let dropCategory = dropNode.data;
 
-      //发出改变菜单请求
+      //被拖拽的分类
+      this.updateCategoryListPush({
+        catId: dragNode.data.catId,
+        parentCid,
+        sort: dropCategory.subCategorys.length, //将元素添加到目标元素的最后一个位置
+        catLevel: dropCategory.catLevel + 1,
+        name: dragNode.data.name,
+      });
+
+      //判断拖拽分类的层级是否发生变化
+      if (dragNode.level != dropNode.level + 1) {
+        this.updateSubCategoryLevel(dragNode.data, dropNode.level + 2);
+      }
+    },
+    /**
+     * 拖拽成功后事件-拖拽目标位置 before,after
+     */
+    handleDropBeforeAndAfter(dragNode, dropNode, dropType, ev) {
+      //parentCid
+      let parentNode = dropNode.parent;
+
+      let subCategorys;
+      if (parentNode.data instanceof Array) {
+        subCategorys = parentNode.data;
+      } else {
+        subCategorys = parentNode.data.subCategorys;
+      }
+
+      let parentCid = dropNode.data.parentCid;
+      parentCid = parentCid ? parentCid : 0;
+      //sort
+      let index = -1;
+      for (let i = 0; i < subCategorys.length; i++) {
+        const element = subCategorys[i];
+
+        if (element.catId == dragNode.data.catId) {
+          //构建被拖拽节点更新数据 parentCid,sort,level
+          this.updateCategoryListPush({
+            catId: element.catId,
+            parentCid,
+            sort: i,
+            catLevel: dropNode.level,
+            name: element.name,
+          });
+          index = i; //拖拽节点的索引
+        } else if (element.sort === 0 || index !== -1) {
+          //当sort字段为0时，对其进行排序，或索引位于拖拽节点之后，需要更新排序
+          this.updateCategoryListPush({
+            catId: element.catId,
+            sort: i,
+            name: element.name,
+          });
+        }
+      }
+
+      //判断拖拽节点的子分类是否受影响
+      if (dragNode.level !== dropNode.level) {
+        //更新拖拽节点的所有子节点
+        this.updateSubCategoryLevel(dragNode.data, dropNode.level + 1);
+      }
+    },
+
+    /**
+     * 更新所有子分类的层级
+     */
+    updateSubCategoryLevel(category, level) {
+      if (Tools.isEmpty(category) || Tools.isEmpty(category.subCategorys)) {
+        return;
+      }
+
+      let subCategorys = category.subCategorys;
+      for (let index = 0; index < subCategorys.length; index++) {
+        const element = subCategorys[index];
+        //修改子分类
+        this.updateCategoryListPush({
+          catId: element.catId,
+          catLevel: level,
+          name: element.name,
+        });
+
+        //递归遍历 子分类
+        this.updateSubCategoryLevel(element, level + 1);
+      }
     },
 
     /**
@@ -236,13 +390,13 @@ export default {
      * 获取节点的总层数
      */
     getCountDeep(node) {
-      if (node == null || node.data == null) {
+      if (Tools.isEmpty(node) || Tools.isEmpty(node.data)) {
         return;
       }
       //从缓存中取出 当前节点的总层数
       let countLevel = deepCacheMap.get(node.data.name);
       //如果从缓存中取不到，则重新计算
-      if (!countLevel) {
+      if (Tools.isEmpty(countLevel)) {
         countLevel = this.countDeep(node);
         deepCacheMap.set(node.data.name, countLevel);
       }
@@ -252,7 +406,7 @@ export default {
      * 计算节点深度
      */
     countDeep(node) {
-      if (node.childNodes == null || node.childNodes.length == 0) {
+      if (Tools.isEmpty(node.childNodes)) {
         return 1;
       }
       let maxLevel = 1;
@@ -384,7 +538,7 @@ export default {
       this.category = { ...NEW_CATEGORY };
       this.category.parentCid = data.catId;
       this.category.catLevel = data.catLevel + 1;
-
+      this.category.sort = data.subCategorys.length; //将添加的分类，置于最后
       //记录当前操作分类
       this.currentCategory = data;
 
