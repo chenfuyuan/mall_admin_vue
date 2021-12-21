@@ -8,7 +8,10 @@ const Tools = {
       return true
     }
     return false
-  }
+  },
+
+  OK: 0
+
 }
 
 export default Tools

@@ -2,6 +2,7 @@
 <template>
   <div>
     <!--操作按钮-->
+    <!--是否开启拖拽，选择按钮-->
     <el-switch
       v-model="draggable"
       active-color="#13ce66"
@@ -10,7 +11,12 @@
       inactive-text="关闭拖拽"
     >
     </el-switch>
+
+    <!--批量删除按钮-->
+    <el-button type="danger" @click="batchRemove">删除</el-button>
+    <!--保存拖拽-->
     <el-button v-if="draggable" @click="batchSaveDrag">保存拖拽</el-button>
+
     <!--树形分类列表-->
     <el-tree
       :data="menus"
@@ -23,6 +29,8 @@
       @node-drop="handleDrop"
       :draggable="draggable"
       :allow-drop="allowDrop"
+      show-checkbox
+      ref='tree'
     >
       <!--菜单操作按钮组-->
       <span class="custom-tree-node" slot-scope="{ node, data }">
@@ -93,7 +101,7 @@
 
 <script>
 import Vue from "vue";
-import Tools from '../../../utils/tool'
+import Tools from "../../../utils/tool";
 //这里可以导入其他文件（比如：组件，工具js，第三方插件js，json文件，图片文件等等）
 //例如：import 《组件名称》 from '《组件路径》';
 
@@ -122,6 +130,8 @@ const DIALOG_CONFIG = {
     buttonText: "修改",
   },
 };
+
+const MSG_SHOW_CATEGORY_NUM = 3;
 
 //节点深度缓存 避免每次拖拽重复计算深度
 let deepCacheMap = new Map();
@@ -152,28 +162,74 @@ export default {
   watch: {},
   //方法集合
   methods: {
-    batchSaveDrag(){
-      if(Tools.isEmpty(this.updateCategoryList)){
+    /**
+     * 批量删除
+     */
+    batchRemove() {
+      //获取所有已选择的分类节点
+      let checkNodes = this.$refs.tree.getCheckedNodes();
+      if(Tools.isEmpty(checkNodes)){
         this.$message({
           showClose:true,
-          message:"无需要保存的数据",
-          type:'success'
+          message:"请至少选择一个分类!"
+        })
+        return;
+      }
+
+      //组建需要删除的catIds数组
+      let catIds = [];
+      for (let index = 0; index < checkNodes.length; index++) {
+        const element = checkNodes[index];
+        catIds.push(element.catId);
+      }
+
+
+      let names = [];
+      let forI = Math.min(checkNodes.length,MSG_SHOW_CATEGORY_NUM);
+      for (let index = 0; index < forI; index++) {
+        const element = checkNodes[index];
+        names.push(element.name);
+      }
+      let confirmMsg = '';
+      if(catIds.length > MSG_SHOW_CATEGORY_NUM){
+        //超过指定显示分类数量时，显示 '等'
+        confirmMsg = `是否删除{${names}}等分类？`;
+      }else{
+        confirmMsg = `是否删除分类{${names}}？`;
+      }
+
+      this.$confirm(confirmMsg)
+      .then(_ =>{
+          //发送删除请求
+          this.removeRequest(catIds,"批量删除成功!"); 
+      }).catch(_=>{});
+    },
+
+    /**
+     * 批量保存拖拽结果
+     */
+    batchSaveDrag() {
+      if (Tools.isEmpty(this.updateCategoryList)) {
+        this.$message({
+          showClose: true,
+          message: "无需要保存的数据",
+          type: "success",
         });
         return;
       }
       this.$http({
-          url: this.$http.adornUrl('/product/category/batch/update'),
-          method:'post',
-          data:this.$http.adornData(this.updateCategoryList,false)
-      }).then(({data}) => {
-          this.$message({
-              showClose:true,
-              message:data.msg,
-              type:"success"
-          })
-          this.updateCategoryList = [];
-          this.getMenus();
-          this.draggable =false;
+        url: this.$http.adornUrl("/product/category/batch/update"),
+        method: "post",
+        data: this.$http.adornData(this.updateCategoryList, false),
+      }).then(({ data }) => {
+        this.$message({
+          showClose: true,
+          message: data.msg,
+          type: "success",
+        });
+        this.updateCategoryList = [];
+        this.getMenus();
+        this.draggable = false;
       });
     },
 
@@ -214,7 +270,7 @@ export default {
       } else if (dropType == "inner") {
         this.handleDropInner(dragNode, dropNode, dropType, ev);
       }
-      console.log("updateList",this.updateCategoryList)
+      console.log("updateList", this.updateCategoryList);
     },
 
     /**
@@ -549,6 +605,38 @@ export default {
     },
 
     /**
+     * 删除请求
+     */
+    removeRequest(catIds, successMsg = "删除成功!") {
+      if (Tools.isEmpty(catIds)) {
+        return;
+      }
+      this.$http({
+        url: this.$http.adornUrl("/product/category/delete"),
+        method: "post",
+        data: this.$http.adornData(catIds, false),
+      }).then(({ data: response }) => {
+        //显示成功删除消息
+        if (response.code !== Tools.OK) {
+          this.$message.error(response.msg);
+          return;
+        }
+
+        this.$message({
+          showClose:true,
+          message:response.msg==='success'?successMsg:response.msg,
+          type:"success"
+        })
+        //从菜单中删除分类
+        // const parent = node.parent;
+        // const childrens = parent.data.subCategorys || parent.data;
+        // let index = childrens.findIndex((item) => item.catId == data.catId);
+        // childrens.splice(index, 1);
+        //刷新菜单
+        this.getMenus();
+      });
+    },
+    /**
      * 删除菜单
      */
     remove(node, data) {
@@ -559,28 +647,9 @@ export default {
         type: "warning",
       })
         .then(() => {
-          //进行删除操作
+          //获取需要删除的分类的catId
           let catIds = [data.catId];
-          this.$http({
-            url: this.$http.adornUrl("/product/category/delete"),
-            method: "post",
-            data: this.$http.adornData(catIds, false),
-          }).then(({ data }) => {
-            //显示成功删除消息
-            this.$message({
-              showClose: true,
-              message: "删除成功",
-              type: "success",
-            });
-
-            //从菜单中删除分类
-            // const parent = node.parent;
-            // const childrens = parent.data.subCategorys || parent.data;
-            // let index = childrens.findIndex((item) => item.catId == data.catId);
-            // childrens.splice(index, 1);
-            //刷新菜单
-            this.getMenus();
-          });
+          this.removeRequest(catIds);
         })
         .catch(() => {});
     },
