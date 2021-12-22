@@ -1,4 +1,9 @@
 const Tools = {
+  /**
+   * 判断传入对象是否为空
+   * @param {判断对象} obj 
+   * @returns 该对象是否为空
+   */
   isEmpty (obj) {
     if (obj === undefined || obj === null) {
       return true
@@ -10,7 +15,14 @@ const Tools = {
     return false
   },
 
-  OK: 0
+  /**
+   * 处理出错
+   * @param {出错组件} app
+   * @param {出错信息} msg
+   */
+  messageError (app, msg = '') {
+    app.$message.error(msg)
+  }
 
 }
 

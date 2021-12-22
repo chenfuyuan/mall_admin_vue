@@ -16,7 +16,9 @@ export function getUUID () {
  * @param {*} key
  */
 export function isAuth (key) {
-  return JSON.parse(sessionStorage.getItem('permissions') || '[]').indexOf(key) !== -1 || false
+  // 暂时取消权限
+  // return JSON.parse(sessionStorage.getItem('permissions') || '[]').indexOf(key) !== -1 || false
+  return true
 }
 
 /**

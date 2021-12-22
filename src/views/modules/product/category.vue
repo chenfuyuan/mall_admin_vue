@@ -101,7 +101,8 @@
 
 <script>
 import Vue from "vue";
-import Tools from "../../../utils/tool";
+import Tools from "../../../utils/Tool";
+import GlobalConst from "../../../utils/GlobalConst";
 //这里可以导入其他文件（比如：组件，工具js，第三方插件js，json文件，图片文件等等）
 //例如：import 《组件名称》 from '《组件路径》';
 
@@ -617,7 +618,7 @@ export default {
         data: this.$http.adornData(catIds, false),
       }).then(({ data: response }) => {
         //显示成功删除消息
-        if (response.code !== Tools.OK) {
+        if (response.code !== GlobalConst.RESPONSE_CODE.OK) {
           this.$message.error(response.msg);
           return;
         }
