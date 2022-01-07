@@ -61,8 +61,11 @@
         prop="logo"
         header-align="center"
         align="center"
-        label="品牌logo地址"
+        label="品牌logo"
       >
+      <template slot-scope="scope">
+        <img :src="scope.row.logo" style="height:80px;width:40px"/>
+      </template>
       </el-table-column>
       <el-table-column
         prop="descript"
@@ -147,8 +150,8 @@
 
 <script>
 import AddOrUpdate from "./brand-add-or-update";
-import Tools from "../../../utils/Tool"
-import GlobalConst from "../../../utils/GlobalConst"
+import Tools from "@/utils/Tool"
+import GlobalConst from "@/utils/GlobalConst"
 export default {
   data() {
     return {
