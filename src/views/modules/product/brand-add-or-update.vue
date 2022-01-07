@@ -48,7 +48,8 @@
 </template>
 
 <script>
-import singleUpload from '@/components/upload/singleUpload'
+import singleUpload from "@/components/upload/singleUpload";
+import Tools from "@/utils/Tool.js";
 export default {
   components: { singleUpload },
   data() {
@@ -61,7 +62,7 @@ export default {
         descript: "",
         showStatus: "",
         firstLetter: "",
-        sort: "",
+        sort: 0,
       },
       dataRule: {
         name: [{ required: true, message: "品牌名不能为空", trigger: "blur" }],
@@ -79,9 +80,31 @@ export default {
           },
         ],
         firstLetter: [
-          { required: true, message: "检索首字母不能为空", trigger: "blur" },
+          {
+            validator: (rule, value, callback) => {
+              if (!Tools.isEmpty(value)) {
+                Tools.validateTool.condition(
+                  !/^[a-zA-Z]$/.test(value),
+                  "检索首字母必须为字母且只能有一位",
+                  callback
+                );
+              }
+            },
+            trigger: "blur",
+          },
         ],
-        sort: [{ required: true, message: "排序不能为空", trigger: "blur" }],
+        sort: [
+          {
+            validator: (rule, value, callback) => {
+              if (!Tools.isEmpty(value)) {
+                Tools.validateTool
+                  .num(value, "排序不能非数字", callback)
+                  .condition(value < 0, "排序不能小于0", callback);
+              }
+            },
+            trigger: "blur",
+          },
+        ],
       },
     };
   },
