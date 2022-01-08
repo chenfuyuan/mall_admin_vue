@@ -50,6 +50,7 @@
 <script>
 import singleUpload from "@/components/upload/singleUpload";
 import Tools from "@/utils/Tool.js";
+import GlobalConst from "@/utils/GlobalConst.js";
 export default {
   components: { singleUpload },
   data() {
@@ -66,9 +67,9 @@ export default {
       },
       dataRule: {
         name: [{ required: true, message: "品牌名不能为空", trigger: "blur" }],
-        logo: [
+        /*logo: [
           { required: true, message: "品牌logo地址不能为空", trigger: "blur" },
-        ],
+        ],*/
         descript: [
           { required: true, message: "介绍不能为空", trigger: "blur" },
         ],
@@ -89,6 +90,7 @@ export default {
                   callback
                 );
               }
+              callback();
             },
             trigger: "blur",
           },
@@ -98,9 +100,10 @@ export default {
             validator: (rule, value, callback) => {
               if (!Tools.isEmpty(value)) {
                 Tools.validateTool
-                  .num(value, "排序不能非数字", callback)
-                  .condition(value < 0, "排序不能小于0", callback);
+                  .num(value, "排序必须为正数", callback)
+                  .condition(value < 0, "排序必须为正数", callback);
               }
+              callback();
             },
             trigger: "blur",
           },
@@ -122,13 +125,14 @@ export default {
             method: "get",
             params: this.$http.adornParams(),
           }).then(({ data }) => {
-            if (data && data.code === 0) {
+            if (data && data.code === GlobalConst.RESPONSE_CODE.OK) {
               this.dataForm.name = data.brand.name;
               this.dataForm.logo = data.brand.logo;
               this.dataForm.descript = data.brand.descript;
               this.dataForm.showStatus = data.brand.showStatus;
               this.dataForm.firstLetter = data.brand.firstLetter;
               this.dataForm.sort = data.brand.sort;
+              this.dataForm.updateVersion = data.brand.updateVersion;
             }
           });
         }
@@ -152,8 +156,18 @@ export default {
               firstLetter: this.dataForm.firstLetter,
               sort: this.dataForm.sort,
             }),
-          }).then(({ data }) => {
-            if (data && data.code === 0) {
+          }).then(({ data:response }) => {
+            GlobalConst.RESPONSE_COMMON_CALLBACK(
+              this,
+              response,
+              "操作成功!",
+              () => {
+                this.visible = false;
+                this.$emit("refreshDataList");
+              }
+            );
+            /*
+            if (data && data.code === GlobalConst.RESPONSE_CODE.OK) {
               this.$message({
                 message: "操作成功",
                 type: "success",
@@ -165,7 +179,7 @@ export default {
               });
             } else {
               this.$message.error(data.msg);
-            }
+            }*/
           });
         }
       });

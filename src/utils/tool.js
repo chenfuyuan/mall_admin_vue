@@ -52,6 +52,19 @@ const Tools = {
       }
       return this
     }
+  },
+
+  // 遍历map中value组装成一个字符串，建个符号为interval
+  mapForEachValueToString (map, interval = '\n') {
+    let strCache = ''
+    map.foreach((key, value) => {
+      strCache.concat(interval)
+    })
+    return strCache
+  },
+
+  objectValuesToString (obj, interval = '\n') {
+    return Object.values(obj).join(interval)
   }
 
 }

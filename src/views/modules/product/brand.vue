@@ -64,7 +64,7 @@
         label="品牌logo"
       >
       <template slot-scope="scope">
-        <img :src="scope.row.logo" style="height:80px;width:40px"/>
+        <img :src="scope.row.logo" style="height:80px;width:100px"/>
       </template>
       </el-table-column>
       <el-table-column
@@ -183,7 +183,7 @@ export default {
       //获取brandId和showStatus
       let {brandId,showStatus} = brand;
       
-      this.updateBrandRequest({brandId,showStatus},"更新显示状态成功!");
+      this.updateBrandShowStatusRequest({brandId,showStatus},"更新显示状态成功!");
 
     },
 
@@ -192,7 +192,7 @@ export default {
      * @param brand 需要更新的品牌信息
      * @successMsg 请求成功后提示的消息
      */
-    updateBrandRequest(brand,successMsg='更新成功',callback=GlobalConst.RESPONSE_EMPTY_CALLBACK){
+    updateBrandShowStatusRequest(brand,successMsg='更新成功',callback=GlobalConst.RESPONSE_EMPTY_CALLBACK){
       if(Tools.isEmpty(brand)&& Tools.isEmpty(brand.brandId)){
         //判空
         Tools.messageError(this,"更新品牌时发送错误,品牌id为空!");
@@ -200,7 +200,7 @@ export default {
       }
       //发送请求
       this.$http({
-          url: this.$http.adornUrl('/product/brand/update'),
+          url: this.$http.adornUrl('/product/brand/update/showStatus'),
           method:'post',
           data:this.$http.adornData(brand,false)
       }).then(({data:response}) => {
@@ -225,7 +225,8 @@ export default {
           key: this.dataForm.key,
         }),
       }).then(({ data }) => {
-        if (data && data.code === 0) {
+
+        if (data && data.code === GlobalConst.RESPONSE_CODE.OK) {
           this.dataList = data.page.list;
           this.totalPage = data.page.totalCount;
         } else {

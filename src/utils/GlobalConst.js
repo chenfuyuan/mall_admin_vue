@@ -1,10 +1,13 @@
+import Tools from '@/utils/Tool.js'
 // eslint-disable-next-line no-unused-vars
 const GlobalConst = {
   /**
    * 请求响应返回
    */
   RESPONSE_CODE: {
-    OK: 0
+    OK: '200',
+    BODY_NOT_MATCH: '400',
+    DATA_VALIDATE_ERROR: '405'
   },
 
   /**
@@ -15,17 +18,23 @@ const GlobalConst = {
 
   },
 
-  RESPONSE_COMMON_CALLBACK: (app, response, successMsg = '操作成功!') => {
-    if (response.code !== this.RESPONSE_CODE.OK) {
-      app.$message.error(response.msg)
+  RESPONSE_COMMON_CALLBACK: (app, response, successMsg = '操作成功!', onclose = null) => {
+    if (response.code !== GlobalConst.RESPONSE_CODE.OK) {
+      // 操作失败
+      if (response.code === GlobalConst.RESPONSE_CODE.DATA_VALIDATE_ERROR) {
+        // 数据校验错误，提示信息
+        app.$message.error(Tools.objectValuesToString(response.error))
+      } else {
+        app.$message.error(response.msg)
+      }
       return
     }
-
     app.$message({
       showClose: true,
       message: response.msg === 'success' ? successMsg : response.msg,
       type: 'success',
-      duration: 1000
+      duration: 1500,
+      onclose: onclose()
     })
   }
 }

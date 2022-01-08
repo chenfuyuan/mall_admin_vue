@@ -80,7 +80,6 @@
         let _self = this;
         return new Promise((resolve, reject) => {
           policy().then(response => {
-            debugger;
             let signature = response.signature;
             _self.dataObj.policy = signature.policy;
             _self.dataObj.signature = signature.signature;
