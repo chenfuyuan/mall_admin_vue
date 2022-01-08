@@ -67,16 +67,16 @@ export default {
       },
       dataRule: {
         name: [{ required: true, message: "品牌名不能为空", trigger: "blur" }],
-        /*logo: [
+        logo: [
           { required: true, message: "品牌logo地址不能为空", trigger: "blur" },
-        ],*/
+        ],
         descript: [
           { required: true, message: "介绍不能为空", trigger: "blur" },
         ],
         showStatus: [
           {
             required: true,
-            message: "显示状态[0-不显示；1-显示]不能为空",
+            message: "显示状态不能为空",
             trigger: "blur",
           },
         ],
