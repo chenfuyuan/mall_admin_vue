@@ -10,6 +10,7 @@ import '@/assets/scss/index.scss'
 import httpRequest from '@/utils/httpRequest' // api: https://github.com/axios/axios
 import { isAuth } from '@/utils'
 import cloneDeep from 'lodash/cloneDeep'
+import moment from 'moment'
 
 Vue.use(VueCookie)
 Vue.config.productionTip = false
@@ -34,3 +35,7 @@ new Vue({
   template: '<App/>',
   components: { App }
 })
+
+Vue.prototype.$moment = moment
+
+moment.locale('zh-cn')

@@ -1,3 +1,4 @@
+import moment from "moment"
 const Tools = {
   /**
    * 判断传入对象是否为空
@@ -65,8 +66,12 @@ const Tools = {
 
   objectValuesToString (obj, interval = '\n') {
     return Object.values(obj).join(interval)
-  }
+  },
 
+  // 时间格式化
+  dateFormater (time) {
+    return moment(time).format('yyyy-MM-DD HH:mm:ss')
+  }
 }
 
 export default Tools

@@ -1,6 +1,14 @@
 import Tools from '@/utils/Tool.js'
 // eslint-disable-next-line no-unused-vars
 const GlobalConst = {
+
+  // 分类Id
+  CATLEVEL: {
+    CATLEVEL_1: 1,
+    CATLEVEL_2: 2,
+    CATLEVEL_3: 3
+  },
+
   /**
    * 请求响应返回
    */
