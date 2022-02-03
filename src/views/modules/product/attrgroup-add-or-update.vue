@@ -16,8 +16,11 @@
     <el-form-item label="组图标" prop="icon">
       <el-input v-model="dataForm.icon" placeholder="组图标"></el-input>
     </el-form-item>
-    <el-form-item label="所属分类id" prop="catelogId">
-      <el-input v-model="dataForm.catelogId" placeholder="所属分类id"></el-input>
+    <el-form-item label="所属分类" prop="catelogId">
+       <el-cascader
+        v-model="dataForm.categoryPath"
+        :options="categorys"
+        :props="props.categoryPath"></el-cascader>
     </el-form-item>
     </el-form>
     <span slot="footer" class="dialog-footer">
@@ -34,6 +37,14 @@
     data () {
       return {
         visible: false,
+        categorys: [],
+        props:{
+          categoryPath:{
+            value: "catId",
+            label: "name",
+            children: "subCategorys"
+          }
+        },
         dataForm: {
           attrGroupId: 0,
           attrGroupName: '',
@@ -44,7 +55,9 @@
           isDelete: '',
           gmtCreate: '',
           gmtModified: '',
-          updateVersion: ''
+          updateVersion: '',
+          categoryPath: [],
+          catelogId:0
         },
         dataRule: {
           attrGroupName: [
@@ -66,8 +79,23 @@
       }
     },
     methods: {
+
+        //获取分类菜单
+        getCategorys(){
+          if(this.categorys.length !== 0){
+            return;
+          }
+          this.$http({
+          url: this.$http.adornUrl("/product/category/list/tree"),
+          method: "get",
+        }).then(({ data }) => {
+          this.categorys = data.data;
+        });
+      },
       init (id) {
+        console.log(this.categorys)
         this.dataForm.attrGroupId = id || 0
+        this.dataForm.categoryPath = []
         this.visible = true
         this.$nextTick(() => {
           this.$refs['dataForm'].resetFields()
@@ -87,7 +115,7 @@
                 this.dataForm.gmtCreate = data.attrGroup.gmtCreate
                 this.dataForm.gmtModified = data.attrGroup.gmtModified
                 this.dataForm.updateVersion = data.attrGroup.updateVersion
-                console.log(typeof(this.dataForm.gmtCreate))
+                this.dataForm.categoryPath = data.attrGroup.categoryPath
               }
             })
           }
@@ -106,11 +134,11 @@
                 'sort': this.dataForm.sort,
                 'descript': this.dataForm.descript,
                 'icon': this.dataForm.icon,
-                'catelogId': this.dataForm.catelogId,
                 'isDelete': this.dataForm.isDelete,
                 'gmtCreate': this.dataForm.gmtCreate,
                 'gmtModified': this.dataForm.gmtModified,
-                'updateVersion': this.dataForm.updateVersion
+                'updateVersion': this.dataForm.updateVersion,
+                'catelogId': this.dataForm.categoryPath[this.dataForm.categoryPath.length -1]
               })
             }).then(({data}) => {
               if (data && data.code === GlobalConst.RESPONSE_CODE.OK) {
@@ -130,6 +158,10 @@
           }
         })
       }
+    },
+
+    created() {
+      this.getCategorys()
     }
   }
 </script>
