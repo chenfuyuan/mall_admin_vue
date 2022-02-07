@@ -2,6 +2,7 @@
   <el-dialog
     :title="!dataForm.attrGroupId ? '新增' : '修改'"
     :close-on-click-modal="false"
+    @close ="dialogCloseHandle"
     :visible.sync="visible">
     <el-form :model="dataForm" :rules="dataRule" ref="dataForm" @keyup.enter.native="dataFormSubmit()" label-width="80px">
     <el-form-item label="组名" prop="attrGroupName">
@@ -79,7 +80,9 @@
       }
     },
     methods: {
-
+        dialogCloseHandle () {
+          this.dataForm.categoryPath = [];
+        },
         //获取分类菜单
         getCategorys(){
           if(this.categorys.length !== 0){

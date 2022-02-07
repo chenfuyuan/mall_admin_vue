@@ -40,7 +40,6 @@ export default {
       let categoryPath = [];
       this.getCategoryPath(node,categoryPath);
       data.categoryPath = categoryPath;
-      console.log(data)
       this.$emit("handle-node-click",data,node,component);
     },
 
