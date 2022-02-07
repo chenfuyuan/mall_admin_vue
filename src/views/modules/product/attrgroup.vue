@@ -23,7 +23,7 @@
             <el-button
               v-if="isAuth('product:attrgroup:save')"
               type="primary"
-              @click="addOrUpdateHandle()"
+              @click="addOrUpdateHandle('add')"
               >新增</el-button
             >
             <el-button
@@ -102,7 +102,7 @@
               <el-button
                 type="text"
                 size="small"
-                @click="addOrUpdateHandle(scope.row.attrGroupId)"
+                @click="addOrUpdateHandle('update',scope.row.attrGroupId)"
                 >修改</el-button
               >
               <el-button
@@ -158,6 +158,7 @@ export default {
       dataListSelections: [],
       addOrUpdateVisible: false,
       catId: 0,
+      categoryPath: [],
     };
   },
   components: {
@@ -174,6 +175,7 @@ export default {
       if (data.catLevel === GlobalConst.CATLEVEL.CATLEVEL_3) {
         //当分类是三级分类时，针对该三级分类进行属性组查询
         this.catId = data.catId;
+        this.categoryPath = data.categoryPath;
         this.getDataList();
       }
     },
@@ -215,10 +217,15 @@ export default {
       this.dataListSelections = val;
     },
     // 新增 / 修改
-    addOrUpdateHandle(id) {
+    addOrUpdateHandle(option,id) {
       this.addOrUpdateVisible = true;
       this.$nextTick(() => {
+        if(option === GlobalConst.OPTION.ADD){
+        //获取分类路径
+        this.$refs.addOrUpdate.init(null,this.categoryPath);
+        }else if(option === GlobalConst.option.UPDATE){
         this.$refs.addOrUpdate.init(id);
+        }
       });
     },
     // 删除

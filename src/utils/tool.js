@@ -15,6 +15,15 @@ const Tools = {
     }
     return false
   },
+  
+  /**
+   * 判断传入对象是否非空
+   * @param {*} obj 判断对象
+   * @returns 该对象是否非空，非空返回true
+   */
+  isNotEmpty (obj) {
+    return !this.isEmpty(obj)
+  },
 
   /**
    * 处理出错

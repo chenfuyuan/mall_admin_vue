@@ -2,6 +2,11 @@ import Tools from '@/utils/Tool.js'
 // eslint-disable-next-line no-unused-vars
 const GlobalConst = {
 
+  OPTION: {
+    ADD: 'add',
+    UPDATE: 'update',
+    DELETE: 'delete'
+  },
   // 分类Id
   CATLEVEL: {
     CATLEVEL_1: 1,

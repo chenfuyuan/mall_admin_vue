@@ -92,10 +92,9 @@
           this.categorys = data.data;
         });
       },
-      init (id) {
-        console.log(this.categorys)
+      init (id,categoryPath=[]) {
         this.dataForm.attrGroupId = id || 0
-        this.dataForm.categoryPath = []
+        this.dataForm.categoryPath = categoryPath;
         this.visible = true
         this.$nextTick(() => {
           this.$refs['dataForm'].resetFields()
